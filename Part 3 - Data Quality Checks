@@ -1,0 +1,283 @@
+Part 3 - Generate a query to capture data quality issues against the new structured relational data model
+
+-------- Check if all the primary keys are unique 
+
+SELECT user_id
+FROM users
+GROUP BY user_id
+HAVING COUNT(*) > 1;
+
+SELECT category_code
+FROM brand_category
+GROUP BY category_code
+HAVING COUNT(*) > 1;
+
+SELECT cpg_id
+FROM consumer_packaged_goods
+GROUP BY cpg_id
+HAVING COUNT(*) > 1;
+
+SELECT brand_id
+FROM brand
+GROUP BY brand_id
+HAVING COUNT(*) > 1;
+
+SELECT receipt_id
+FROM receipts
+GROUP BY receipt_id
+HAVING COUNT(*) > 1;
+
+SELECT bonus_reason_id
+FROM bonus_points_reasons
+GROUP BY bonus_reason_id
+HAVING COUNT(*) > 1;
+
+SELECT receipt_item_id
+FROM receipt_items
+GROUP BY receipt_item_id
+HAVING COUNT(*) > 1;
+
+SELECT item_id
+FROM items
+GROUP BY item_id
+HAVING COUNT(*) > 1;
+
+
+
+--------- Check if all the primary keys don't have null values
+
+
+SELECT *
+FROM users
+WHERE user_id IS NULL;
+
+-- Repeat for other tables
+SELECT *
+FROM brand_category
+WHERE category_code IS NULL;
+
+SELECT *
+FROM consumer_packaged_goods
+WHERE cpg_id IS NULL;
+
+SELECT *
+FROM brand
+WHERE brand_id IS NULL;
+
+SELECT *
+FROM receipts
+WHERE receipt_id IS NULL;
+
+SELECT *
+FROM bonus_points_reasons
+WHERE bonus_reason_id IS NULL;
+
+SELECT *
+FROM receipt_items
+WHERE receipt_item_id IS NULL;
+
+SELECT *
+FROM items
+WHERE item_id IS NULL;
+
+
+
+
+---------- Check to see if all the foreign keys have their parents keys
+
+
+-- Check for brand Records with Orphaned cpg_id (Consumer Packaged Goods)
+
+SELECT brand.brand_id
+FROM brand
+LEFT OUTER JOIN consumer_packaged_goods cpg 
+ON brand.cpg_id = cpg.cpg_id
+WHERE cpg.cpg_id IS NULL;
+
+
+-- Check for brand Records with Orphaned category_code
+
+SELECT brand.brand_id
+FROM brand
+LEFT OUTER JOIN brand_category bc
+ON brand.category_code = bc.category_code
+WHERE bc.category_code IS NULL;
+
+
+
+-- Check for receipts with Orphaned user_id
+
+SELECT receipts.receipt_id
+FROM receipts
+LEFT OUTER JOIN users
+ON receipts.user_id = users.user_id
+WHERE users.user_id IS NULL;
+
+
+-- Check for receipts with Orphaned bonus_reason_id
+
+SELECT receipts.receipt_id
+FROM receipts
+LEFT OUTER JOIN bonus_points_reasons
+ON receipts.bonus_reason_id = bonus_points_reasons.bonus_reason_id
+WHERE bonus_points_reasons.bonus_reason_id IS NULL;
+
+
+-- Check for receipt_items with Orphaned receipt_id
+
+SELECT receipt_items.receipt_item_id
+FROM receipt_items
+LEFT OUTER JOIN receipts
+ON receipt_items.receipt_id = receipts.receipt_id
+WHERE receipts.receipt_id IS NULL;
+
+
+
+-- Check for receipt_items with Orphaned item_id
+
+SELECT receipt_items.receipt_item_id
+FROM receipt_items
+LEFT OUTER JOIN items
+ON receipt_items.item_id = items.item_id
+WHERE items.item_id IS NULL;
+
+
+
+-- Check for items with Orphaned brand_id
+
+SELECT items.item_id
+FROM items
+LEFT OUTER JOIN brand
+ON items.brand_id = brand.brand_id
+WHERE brand.brand_id IS NULL;
+
+
+
+
+--------- Check if each fields meet with their business definition
+
+
+Receipts table data quality check
+
+
+-- Check for negative values in `totalSpent` in the `Receipts` table
+
+SELECT *
+FROM Receipts
+WHERE totalSpent < 0;
+
+-- Check that bonusPointsEarned is ≥ 0
+
+SELECT *
+FROM receipts
+WHERE bonusPointsEarned < 0;
+
+
+-- Ensure totalSpent is ≥ 0
+
+SELECT *
+FROM receipts
+WHERE totalSpent < 0;
+
+
+-- Ensure purchasedItemCount is ≥ 1
+
+SELECT *
+FROM receipts
+WHERE purchasedItemCount < 1;
+
+
+-- Ensure purchaseDate is not in the future
+
+SELECT *
+FROM receipts
+WHERE purchaseDate > NOW();
+
+
+
+-- Ensure dateScanned is on or after purchaseDate and not in the future
+
+SELECT *
+FROM receipts
+WHERE dateScanned < purchaseDate OR dateScanned > NOW();
+
+
+-- Ensure finishedDate is on or after dateScanned
+
+SELECT *
+FROM receipts
+WHERE finishedDate < dateScanned;
+
+
+-- Ensure createDate is not after modifyDate
+
+SELECT *
+FROM receipts
+WHERE createDate > modifyDate;
+
+
+-- Ensure bonusPointsEarned > 0 must have bonusPointsEarnedReason
+
+SELECT *
+FROM receipts
+JOIN bonus_points_reasons
+ON receipts.bonus_reason_id  = bonus_points_reasons.bonus_reason_id
+WHERE bonusPointsEarned > 0 
+AND (reason IS NULL OR reason = '');
+
+
+-- Ensure purchasedItemCount matches the number of items in 
+-- rewardsReceiptItemList
+
+SELECT COUNT(*)
+FROM receipts r
+JOIN receipt_items ri
+ON r.receipt_id = ri.receipt_id
+WHERE r.purchasedItemCount <> (
+    SELECT COUNT(*) 
+    FROM receipt_items ri_sub 
+    WHERE ri_sub.receipt_id = r.receipt_id
+);
+
+
+
+
+Users table data quality check
+
+
+-- Check if State is NULL or is not two characters
+
+SELECT * FROM users 
+WHERE state IS NULL OR LENGTH(state) <> 2
+
+
+-- Check if role is Always 'CONSUMER'
+
+SELECT * FROM users 
+WHERE role <> 'CONSUMER';
+
+
+-- Ensure createdDate is Not in the Future
+
+SELECT * FROM users WHERE created_date > NOW();
+
+
+
+-- Ensure lastLogin is After createdDate and Not in the Future
+
+SELECT * FROM users 
+WHERE last_login IS NOT NULL 
+AND (last_login < created_date 
+OR last_login > NOW());
+
+
+Brand table data quality check 
+
+-- Check for NULL or empty brandCode
+
+SELECT * FROM brand 
+WHERE brandCode IS NULL OR brandCode = '';
+
+
+
+
