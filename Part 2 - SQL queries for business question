@@ -1,0 +1,59 @@
+Using MySQL to answer at least two predetermined business question
+
+1- What are the top 5 brands by receipts scanned for most recent month?
+
+WITH recent_month AS (
+    SELECT DATE_FORMAT(MAX(date_scanned), '%Y-%m') AS recent_month
+    FROM receipts
+)
+
+SELECT 
+    b.name AS brand_name, 
+    COUNT(DISTINCT r.receipt_id) AS total_receipts
+FROM receipts r
+JOIN receipt_items ri 
+ON r.receipt_id = ri.receipt_id
+JOIN items i 
+ON ri.item_id = i.item_id
+JOIN brand b 
+ON i.brand_id = b.brand_id
+WHERE DATE_FORMAT(r.date_scanned, '%Y-%m') = (SELECT recent_month FROM recent_month)
+GROUP BY b.name
+ORDER BY total_receipts DESC
+LIMIT 5
+
+
+2 - When considering average spend from receipts with 'rewardsReceiptStatus’ of ‘Accepted’ or ‘Rejected’, which is greater?
+
+SELECT 
+    rewards_receipt_status, 
+    AVG(total_spent) AS avg_spend
+FROM receipts
+WHERE rewards_receipt_status IN ('Accepted', 'Rejected')
+GROUP BY rewards_receipt_status
+ORDER BY avg_spend DESC
+LIMIT 1
+
+
+3 - Which brand has the most spend among users who were created within the past 6 months?
+
+WITH recent_users AS (
+    SELECT user_id 
+    FROM users
+    WHERE created_date >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)
+)
+SELECT 
+    b.brand_name, 
+    SUM(r.total_spent) AS total_spend
+FROM receipts AS r
+JOIN recent_users AS u  -- Use the CTE directly in the FROM clause
+ON r.user_id = u.user_id
+JOIN receipt_items AS ri 
+ON r.receipt_id = ri.receipt_id
+JOIN items AS i 
+ON ri.item_id = i.item_id
+JOIN brand AS b 
+ON i.brand_id = b.brand_id
+GROUP BY b.brand_name
+ORDER BY total_spend DESC
+LIMIT 1
