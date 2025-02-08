@@ -1,0 +1,37 @@
+Subject: Data Quality Issues & Next Steps for Users, Brands, and Receipts
+
+Hi [Business Stakeholder’s Name],
+
+I hope you are doing well. After reviewing the Users, Brands, and Receipts datasets, I have identified several key data quality issues 
+that need attention. Below is a summary:
+
+Data Quality Issues
+
+1. Missing Values
+Receipts: topBrand, state, bonusPointsEarned, pointsEarned, purchasedItemCount
+Users: state, signUpSource, lastLogin
+Brands: barcode, brandCode, categoryCode
+
+2. Inconsistencies and Formatting Issues
+Duplicate Data: categoryCode duplicates category.
+MongoDB Format: _id, cpg, and timestamps appear to be in MongoDB format, making queries inefficient.
+Date and Time Format: createDate, lastLogin, etc., should be converted to DATETIME.
+Unexpected Values: role contains unexpected values: fetch-staff.
+
+Questions
+Are these datasets sourced from MongoDB?
+Are barcode values unique across records?
+Why are transactional fields (e.g., pointsEarned, bonusPointsEarned) missing?
+
+Please find my next steps and recommendations below:
+
+Standardize Key Fields: Extract _id, store it as VARCHAR(24), and convert timestamps to DATETIME.
+Handle Missing Values: Define default values ex: "UNKNOWN" or flag missing records.
+Optimize Performance: Instead of storing receipt items within the rewardsReceiptItemList field, 
+create a separate table for this information and enforce barcode uniqueness.
+
+I would love to discuss further. Let me know if you would like to set up a quick call to review these findings.
+
+Best regards,
+Shaun Lin
+
